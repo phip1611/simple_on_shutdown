@@ -40,7 +40,7 @@ use std::time::Instant;
 #[macro_use]
 extern crate log;
 
-/// Simple type that holds an closure (callback). The closure gets invoked during `drop()`.
+/// Simple type that holds a closure (callback). The closure gets invoked during `drop()`.
 /// This works also fine with applications that do gracefully shutdown via signals, like SIGTERM.
 ///
 /// Create this type via `on_shutdown!(println!("foobar"))` or `on_shutdown!({e1; e2; e3; println!("foobar")})`.
@@ -52,7 +52,7 @@ extern crate log;
 /// function is! The code gets executed when the context it lives in gets dropped.
 /// This can be called multiple times (at least with stable Rust 1.48.0) without problem.
 ///
-/// **Example:**
+/// ## Example:
 /// ```
 /// use simple_on_shutdown::on_shutdown;
 ///
@@ -69,14 +69,20 @@ extern crate log;
 ///     // some code ...
 /// }
 /// ```
-pub struct ShutdownCallbackDummy(Box<dyn FnMut()>);
-impl ShutdownCallbackDummy {
+///
+/// ## Name
+/// Wambo ftw :D
+/// Reference: http://de.spongepedia.org/index.php/Wambo
+/// I didn't found a better name
+
+pub struct ShutdownCallbackWambo(Box<dyn FnMut()>);
+impl ShutdownCallbackWambo {
     /// Constructor. Better use macro [`on_shutdown`].
     pub fn new(inner: Box<dyn FnMut()>) -> Self {
         Self(inner)
     }
 }
-impl Drop for ShutdownCallbackDummy {
+impl Drop for ShutdownCallbackWambo {
     /// Executes the specified callback.
     fn drop(&mut self) {
         debug!("on shutdown callback:");
@@ -88,7 +94,7 @@ impl Drop for ShutdownCallbackDummy {
     }
 }
 
-/// Convenient constructor macro for [`ShutdownCallbackDummy`]. Pass in an expression
+/// Convenient constructor macro for [`ShutdownCallbackWambo`]. Pass in an expression
 /// or a block of code you want to be executed during shutdown.
 ///
 /// IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
@@ -121,7 +127,7 @@ macro_rules! on_shutdown {
         // It's okay if this var exists multiple times if the programmer uses the macro
         // multiple times. Because two values may have the same identifier in rustlang
         // but internally they are two different values.
-        let _aafuhaifhabfa252axc3xvcxwqdagteafeerqav = $crate::ShutdownCallbackDummy::new(
+        let _aafuhaifhabfa252axc3xvcxwqdagteafeerqav = $crate::ShutdownCallbackWambo::new(
             // put closure on heap
             Box::new(
                 // closure has zero parameters
