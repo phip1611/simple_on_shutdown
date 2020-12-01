@@ -31,7 +31,10 @@ fn main() {
     env_logger::init();
 
     println!("================ test binary ================");
-    // on_shutdown!(println!("shut down with success"));
+    // Important that the returned value of the macro lives through
+    // the whole lifetime of main(). It gets dropped in the end.
+    on_shutdown!(println!("shut down with success"));
+    // can be used multiple times
     on_shutdown!({
             println!("shut");
             println!("down");

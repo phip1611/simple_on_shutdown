@@ -32,8 +32,8 @@ async fn get_index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Important that this value lives through the whole
-    // lifetime of main(). This gets dropped in the end.
+    // Important that the returned value of the macro lives through
+    // the whole lifetime of main(). It gets dropped in the end.
     on_shutdown!({
                 // the actual code
                 println!("This gets executed during shutdown. Don't to expensive operations here.");

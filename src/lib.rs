@@ -32,6 +32,8 @@ SOFTWARE.
 //! IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
 //! function is! The code gets executed when the context it lives in gets dropped.
 //! This can be called multiple times (at least with stable Rust 1.48.0) without problem.
+//!
+//! This crate uses the `log` crate on the `debug` level.
 
 use std::time::Instant;
 
@@ -43,6 +45,8 @@ extern crate log;
 ///
 /// Create this type via `on_shutdown!(println!("foobar"))` or `on_shutdown!({e1; e2; e3; println!("foobar")})`.
 /// See [`on_shutdown`] for more info.
+///
+/// This crate uses the `log` crate on the `debug` level.
 ///
 /// IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
 /// function is! The code gets executed when the context it lives in gets dropped.
@@ -68,9 +72,12 @@ impl Drop for ShutdownCallbackDummy {
 
 /// Convenient constructor macro for [`ShutdownCallbackDummy`]. Pass in an expression
 /// or a block of code you want to be executed during shutdown.
+///
 /// IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
 /// function is! The code gets executed when the context it lives in gets dropped.
 /// This can be called multiple times (at least with stable Rust 1.48.0) without problem.
+///
+/// This crate uses the `log` crate on the `debug` level.
 #[macro_export]
 macro_rules! on_shutdown {
     ($cb:block) => {
