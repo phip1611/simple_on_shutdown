@@ -51,6 +51,24 @@ extern crate log;
 /// IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
 /// function is! The code gets executed when the context it lives in gets dropped.
 /// This can be called multiple times (at least with stable Rust 1.48.0) without problem.
+///
+/// **Example:**
+/// ```
+/// use simple_on_shutdown::on_shutdown;
+///
+/// fn main() {
+///     // some code ...
+///
+///     // Important that the returned value of the macro lives through
+///     // the whole lifetime of main(). It gets dropped in the end.
+///     on_shutdown!(println!("shut down with success"));
+///
+///     // can be used multiple times
+///     on_shutdown!(println!("shut down with success"));
+///     on_shutdown!({println!("blocks also work")});
+///     // some code ...
+/// }
+/// ```
 pub struct ShutdownCallbackDummy(Box<dyn FnMut()>);
 impl ShutdownCallbackDummy {
     /// Constructor. Better use macro [`on_shutdown`].
@@ -78,6 +96,24 @@ impl Drop for ShutdownCallbackDummy {
 /// This can be called multiple times (at least with stable Rust 1.48.0) without problem.
 ///
 /// This crate uses the `log` crate on the `debug` level.
+///
+/// /// **Example:**
+/// ```
+/// use simple_on_shutdown::on_shutdown;
+///
+/// fn main() {
+///     // some code ...
+///
+///     // Important that the returned value of the macro lives through
+///     // the whole lifetime of main(). It gets dropped in the end.
+///     on_shutdown!(println!("shut down with success"));
+///
+///     // can be used multiple times
+///     on_shutdown!(println!("shut down with success"));
+///     on_shutdown!({println!("blocks also work")});
+///     // some code ...
+/// }
+/// ```
 #[macro_export]
 macro_rules! on_shutdown {
     ($cb:block) => {
