@@ -7,8 +7,12 @@ edition = "2018"
 exclude = [
     ".travis.yml"
 ]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["shutdown", "callback"]
+readme = "README.md"
+license = "MIT"
+homepage = "https://github.com/phip1611"
+repository = "https://github.com/phip1611/simple_on_shutdown"
+documentation = "https://docs.rs/simple_on_shutdown"
 
 [dependencies]
 log = "0.4.11"
