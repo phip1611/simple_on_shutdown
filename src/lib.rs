@@ -69,20 +69,15 @@ extern crate log;
 ///     // some code ...
 /// }
 /// ```
-///
-/// ## Name
-/// Wambo ftw :D
-/// Reference: http://de.spongepedia.org/index.php/Wambo
-/// I didn't found a better name
 
-pub struct ShutdownCallbackWambo(Box<dyn FnMut()>);
-impl ShutdownCallbackWambo {
+pub struct OnShutdownCallback(Box<dyn FnMut()>);
+impl OnShutdownCallback {
     /// Constructor. Better use macro [`on_shutdown`].
     pub fn new(inner: Box<dyn FnMut()>) -> Self {
         Self(inner)
     }
 }
-impl Drop for ShutdownCallbackWambo {
+impl Drop for OnShutdownCallback {
     /// Executes the specified callback.
     fn drop(&mut self) {
         debug!("on shutdown callback:");
@@ -127,7 +122,7 @@ macro_rules! on_shutdown {
         // It's okay if this var exists multiple times if the programmer uses the macro
         // multiple times. Because two values may have the same identifier in rustlang
         // but internally they are two different values.
-        let _aafuhaifhabfa252axc3xvcxwqdagteafeerqav = $crate::ShutdownCallbackWambo::new(
+        let _on_shutdown_callback_1337deadbeeffoobaraffecoffee = $crate::OnShutdownCallback::new(
             // put closure on heap
             Box::new(
                 // closure has zero parameters
