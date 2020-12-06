@@ -35,10 +35,8 @@ SOFTWARE.
 //!
 //! This crate uses the `log` crate on the `debug` level.
 
+use log::debug;
 use std::time::Instant;
-
-#[macro_use]
-extern crate log;
 
 /// Simple type that holds a closure (callback). The closure gets invoked during `drop()`.
 /// This works also fine with applications that do gracefully shutdown via signals, like SIGTERM.
@@ -85,7 +83,10 @@ impl Drop for OnShutdownCallback {
         (self.0)();
         let duration_usecs = now.elapsed().as_micros();
         let duration_secs = duration_usecs as f64 / 1_000_000_f64;
-        debug!("on shutdown callback finished: took {}s ({}µs)", duration_secs, duration_usecs);
+        debug!(
+            "on shutdown callback finished: took {}s ({}µs)",
+            duration_secs, duration_usecs
+        );
     }
 }
 
@@ -129,14 +130,15 @@ macro_rules! on_shutdown {
                 || {
                     // the actual code
                     $cb
-                }
-            )
+                },
+            ),
         );
     };
     // recursive mapping to block
-    ($cb:expr) => { on_shutdown!({$cb}) };
+    ($cb:expr) => {
+        on_shutdown!({ $cb })
+    };
 }
-
 
 /// A test works if after executing it you can see the shutdown action in the output.
 #[cfg(test)]
