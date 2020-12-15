@@ -36,7 +36,7 @@ async fn main() -> std::io::Result<()> {
     // the whole lifetime of main(). It gets dropped in the end.
     on_shutdown!({
                 // the actual code
-                println!("This gets executed during shutdown. Don't to expensive operations here.");
+                println!("This gets executed during shutdown. Don't do expensive operations here.");
     });
 
     HttpServer::new(|| {
