@@ -23,11 +23,14 @@ SOFTWARE.
 */
 
 //! This crate consists of a convenient macro to specify on shutdown callbacks.
-//! This is useful for all runtimes you do not have control over.
+//! This is useful for all runtimes you do not have control over. There is no guarantee
+//! that this gets executed during "non-regular" shutdown scenarios, like `CTRL+C / SIGINT / SIGTERM`.
+//! This depends whether your application properly handles signals and if the operating system
+//! gives your application time before it gets totally killed/stopped.
 //!
-//! The generated main() function of an "actix" web server is a good example. With the
-//! exported macro [`on_shutdown`] you can easily specify code, that should run during program
-//! termination.
+//! The generated main() function of an "actix" web server is a good example where this crate
+//! can be used. With the exported macro [`on_shutdown`] you can easily specify code, that should run
+//! during program termination. In Actix it works in `CTRL+C / SIGINT / SIGTERM`-scenarios.
 //!
 //! IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
 //! function is! The code gets executed when the context it lives in gets dropped.
@@ -67,8 +70,8 @@ use std::time::Instant;
 ///     // some code ...
 /// }
 /// ```
-
 pub struct OnShutdownCallback(Box<dyn FnMut()>);
+
 impl OnShutdownCallback {
     /// Constructor. Better use macro [`on_shutdown`].
     pub fn new(inner: Box<dyn FnMut()>) -> Self {
