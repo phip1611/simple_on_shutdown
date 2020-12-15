@@ -42,7 +42,11 @@ fn main() {
         do_work_handler.store(false, Ordering::Relaxed);
     })
     .unwrap();
-    on_shutdown!(println!("shut down with success"));
+    on_shutdown!({
+        println!("THIS IS REALTED TO \"ctrlc\" crate and has nothing to do with `simple_on_shutdown`:");
+        println!("- On UNIX this gets executed when SIGINT/SIGTERM is received.");
+        println!("- On Windows this gets executed when SIGINT-equivalent is received but probably not when the application gets killed the hard way.");
+    });
     println!("Stop me with CTRL+C or kill me with another method");
 
     // Start work loop
