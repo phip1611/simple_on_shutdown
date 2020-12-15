@@ -21,27 +21,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+//! This example shows you how you can use [`simple_on_shutdown::on_shutdown`] to work
+//! with SIGNALS, like when pressing CTRL+C.
 
 use simple_on_shutdown::on_shutdown;
-use std::thread::sleep;
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
+/// This example shows you how you can use [`simple_on_shutdown::on_shutdown`] to work
+/// with SIGNALS, like when pressing CTRL+C.
 fn main() {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    println!("================ test binary ================");
-    // Important that the returned value of the macro lives through
-    // the whole lifetime of main(). It gets dropped in the end.
+    let do_work = Arc::new(AtomicBool::new(true));
+    let do_work_handler = do_work.clone();
+
+    ctrlc::set_handler(move || {
+        println!("Received CTRL+C");
+        do_work_handler.store(false, Ordering::Relaxed);
+    })
+    .unwrap();
     on_shutdown!(println!("shut down with success"));
-    // can be used multiple times
-    on_shutdown!({
-        println!("shut");
-        println!("down");
-        println!("with");
-        println!("success");
-    });
-    println!("registered on_shutdown");
-    sleep(Duration::from_secs(1));
-    println!("waited 1 second");
+    println!("Stop me with CTRL+C or kill me with another method");
+
+    // Start work loop
+    loop {
+        if !do_work.load(Ordering::Relaxed) {
+            println!("Exiting work loop");
+            break;
+        }
+    }
 }
