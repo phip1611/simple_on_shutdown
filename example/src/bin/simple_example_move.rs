@@ -25,16 +25,30 @@ SOFTWARE.
 use simple_on_shutdown::on_shutdown_move;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::thread::spawn;
 
+/// Simple example that shows how you can move variables
+/// into the callback.
 fn main() {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    let foobar = Arc::new(AtomicBool::new(false));
+    let exit_work_loop = Arc::new(AtomicBool::new(false));
+    let exit_work_loop_t = exit_work_loop.clone();
+    let thread_h = spawn(move || {
+        loop {
+            if exit_work_loop_t.load(Ordering::Relaxed) {
+                break;
+            }
+        }
+        42
+    });
+
     // on_shutdown!() would not work here because the closure needs "foobar"
     on_shutdown_move!({
-        foobar.store(true, Ordering::Relaxed);
-        println!("foobar={}", foobar.load(Ordering::Relaxed));
+        exit_work_loop.store(true, Ordering::Relaxed);
+        let thread_res = thread_h.join().unwrap();
+        println!("thread result={}", thread_res);
     });
     // or just:
     // on_shutdown_move!(foobar.store(true, Ordering::Relaxed));

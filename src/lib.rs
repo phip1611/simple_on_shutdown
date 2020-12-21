@@ -25,8 +25,8 @@ SOFTWARE.
 //! This crate consists of a convenient macro to specify on shutdown callbacks called [`on_shutdown`].
 //! It takes code that should be executed when your program exits (gracefully).
 //!
-//! Internally it creates a closure that gets executed when the context gets dropped, i.e. when
-//! `main()` exits. There is also [`on_shutdown_move`] available in case the closure needs to capture
+//! Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
+//! `main()` exits. There is also [`on_shutdown_move`] available in case the `FnOnce`-closure needs to capture
 //! vars, like an `Arc<>`.
 //!
 //! In theory this macro can be used everywhere where the context gets dropped. But it has a nice
@@ -48,7 +48,7 @@ SOFTWARE.
 use log::debug;
 use std::time::Instant;
 
-/// Simple type that holds a closure (callback). The closure gets invoked during `drop()`.
+/// Simple type that holds a `FnOnce`-closure (callback). The `FnOnce`-closure gets invoked during `drop()`.
 /// This works also fine with applications that do gracefully shutdown via signals, like SIGTERM.
 ///
 /// Create this type via `on_shutdown!(println!("foobar"))` or `on_shutdown!({e1; e2; e3; println!("foobar")})`.
@@ -77,13 +77,14 @@ use std::time::Instant;
 ///     // some code ...
 /// }
 /// ```
-pub struct OnShutdownCallback(Box<dyn FnMut()>);
+pub struct OnShutdownCallback(Option<Box<dyn FnOnce()>>);
 
 impl OnShutdownCallback {
     /// Constructor. Used by [`on_shutdown`] and [`on_shutdown_move`].
+    /// * `cb` boxed(heap) callback function
     // THIS MUST BE PUBLIC, OTHERWISE THE MACROS DO NOT WORK!
-    pub fn new(inner: Box<dyn FnMut()>) -> Self {
-        Self(inner)
+    pub fn new(cb: Box<dyn FnOnce()>) -> Self {
+        Self(Some(cb))
     }
 }
 impl Drop for OnShutdownCallback {
@@ -91,7 +92,9 @@ impl Drop for OnShutdownCallback {
     fn drop(&mut self) {
         debug!("on shutdown callback:");
         let now = Instant::now();
-        (self.0)();
+        // take(): we own the value; this way
+        // we can us FnOnce (which consumes self instead of &mut self)
+        (self.0.take().unwrap())();
         let duration_usecs = now.elapsed().as_micros();
         let duration_secs = duration_usecs as f64 / 1_000_000_f64;
         debug!(
@@ -104,8 +107,8 @@ impl Drop for OnShutdownCallback {
 /// This crate consists of a convenient macro to specify on shutdown callbacks called [`on_shutdown`].
 /// It takes code that should be executed when your program exits (gracefully).
 ///
-/// Internally it creates a closure that gets executed when the context gets dropped, i.e. when
-/// `main()` exits. There is also [`on_shutdown_move`] available in case the closure needs to capture
+/// Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
+/// `main()` exits. There is also [`on_shutdown_move`] available in case the `FnOnce`-closure needs to capture
 /// vars, like an `Arc<>`.
 ///
 /// In theory this macro can be used everywhere where the context gets dropped. But it has a nice
@@ -151,7 +154,7 @@ macro_rules! on_shutdown {
         // multiple times. Because two values may have the same identifier in rustlang
         // but internally they are two different values.
         let _on_shutdown_callback_1337deadbeeffoobaraffecoffee = $crate::OnShutdownCallback::new(
-            // put closure on heap
+            // put FnOnce-closure on heap
             Box::new(
                 // closure has zero parameters
                 || {
@@ -167,7 +170,7 @@ macro_rules! on_shutdown {
     };
 }
 
-/// Like [`on_shutdown`] but moves all variables into the created closure.
+/// Like [`on_shutdown`] but moves all variables into the created `FnOnce`-closure.
 /// ## Example
 /// ```
 /// use std::sync::atomic::AtomicBool;

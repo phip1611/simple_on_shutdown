@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use actix_web::{get, HttpServer, App, HttpResponse, Responder};
+use actix_web::{get, App, HttpResponse, HttpServer, Responder};
 use simple_on_shutdown::on_shutdown;
 
 #[get("/")]
@@ -35,14 +35,11 @@ async fn main() -> std::io::Result<()> {
     // Important that the returned value of the macro lives through
     // the whole lifetime of main(). It gets dropped in the end.
     on_shutdown!({
-                // the actual code
-                println!("This gets executed during shutdown. Don't do expensive operations here.");
+        // the actual code
+        println!("This gets executed during shutdown. Better don't do expensive operations here.");
     });
 
-    HttpServer::new(|| {
-        App::new()
-            .service(get_index)
-    })
+    HttpServer::new(|| App::new().service(get_index))
         .bind(format!("localhost:{}", 8080))?
         .run()
         .await

@@ -3,8 +3,8 @@
 This crate consists of a convenient macro to specify on shutdown callbacks called `on_shutdown!`. It takes code that
 should be executed when your program exits (gracefully). 
 
-Internally it creates a closure that gets executed when the context gets dropped, i.e. when
-`main()` exits. There is also `on_shutdown_move!` available in case the closure needs to capture vars, like an `Arc<>`.
+Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
+`main()` exits. There is also `on_shutdown_move!` available in case the `FnOnce`-closure needs to capture vars, like an `Arc<>`.
 
 In theory this macro can be used everywhere where the context gets dropped. But it has a nice expressive name so that
 one exactly knows what it should achieve in code. A good example is the `main()` function in an `actix-web`-Server. For
@@ -34,7 +34,7 @@ use simple_on_shutdown::{on_shutdown, on_shutdown_move};
 fn main() {
     on_shutdown!(println!("shutted down"));
 
-    // If you need to move a variable into the closure
+    // If you need to move a variable into the `FnOnce`-closure
     let foobar = Arc::new(AtomicBool::new(false));
     on_shutdown_move!({
         foobar.store(true, Ordering::Relaxed);
@@ -56,9 +56,11 @@ fn main() {
 }
 ```
 
-## Actix Web Server
+## Examples
+*See also ["example/"-dir in repository!](https://github.com/phip1611/simple_on_shutdown/tree/main/example/src/bin)*
 
-*See also "example/"-dir in repository!*
+
+### Actix Web Server Example
 
 ```rust
 use actix_web::{get, HttpServer, App, HttpResponse, Responder};
@@ -75,7 +77,7 @@ async fn main() -> std::io::Result<()> {
     // the whole lifetime of main(). It gets dropped in the end.
     on_shutdown!({
                 // the actual code
-                println!("This gets executed during shutdown. Don't do expensive operations here.");
+                println!("This gets executed during shutdown. Better don't do expensive operations here.");
     });
 
     HttpServer::new(|| {
