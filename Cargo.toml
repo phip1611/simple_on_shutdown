@@ -3,7 +3,7 @@ name = "simple_on_shutdown"
 description = """
 This crate consists of a convenient macro to specify on shutdown callbacks (=code that should run when your program exits (grafecully)). It's super simple and stripped-down.
 """
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Philipp Schuster <phip1611@gmail.com>"]
 edition = "2018"
 exclude = [

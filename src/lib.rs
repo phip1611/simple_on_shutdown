@@ -171,6 +171,7 @@ macro_rules! on_shutdown {
 /// ## Example
 /// ```
 /// use std::sync::atomic::AtomicBool;
+/// use std::sync::atomic::Ordering;
 /// use std::sync::Arc;
 /// use simple_on_shutdown::on_shutdown_move;
 ///
