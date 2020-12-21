@@ -81,7 +81,8 @@ pub struct OnShutdownCallback(Box<dyn FnMut()>);
 
 impl OnShutdownCallback {
     /// Constructor. Used by [`on_shutdown`] and [`on_shutdown_move`].
-    pub(crate) fn new(inner: Box<dyn FnMut()>) -> Self {
+    // THIS MUST BE PUBLIC, OTHERWISE THE MACROS DO NOT WORK!
+    pub fn new(inner: Box<dyn FnMut()>) -> Self {
         Self(inner)
     }
 }
