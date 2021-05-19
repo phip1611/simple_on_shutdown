@@ -21,35 +21,46 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+//! This example shows you how you can use [`simple_on_shutdown::on_shutdown`] to work
+//! with SIGNALS, like when pressing CTRL+C.
 
-use simple_on_shutdown::on_shutdown_move;
+use simple_on_shutdown::on_shutdown;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::spawn;
 
-/// Simple example that shows how you can move variables
-/// into the callback.
+/// This example shows you how you can use [`simple_on_shutdown::on_shutdown`] to work
+/// with SIGNALS, like when pressing CTRL+C.
 fn main() {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
 
-    let exit_work_loop = Arc::new(AtomicBool::new(false));
-    let exit_work_loop_t = exit_work_loop.clone();
-    let thread_h = spawn(move || {
-        loop {
-            if exit_work_loop_t.load(Ordering::Relaxed) {
-                break;
-            }
-        }
-        42
+    let do_work = Arc::new(AtomicBool::new(true));
+    let do_work_handler = do_work.clone();
+
+    ctrlc::set_handler(move || {
+        println!("Received CTRL+C");
+        do_work_handler.store(false, Ordering::Relaxed);
+    })
+    .unwrap();
+
+    on_shutdown!({
+        println!(
+            "THIS IS RELATED TO \"ctrlc\" crate and has nothing to do with `simple_on_shutdown`:"
+        );
+        println!("- On UNIX this gets executed when SIGINT/SIGTERM is received.");
+        println!(
+            "- On Windows this gets executed when SIGINT-equivalent is received but probably \
+        not when the application gets killed the hard way."
+        );
     });
 
-    // on_shutdown!() would not work here because the closure needs "foobar"
-    on_shutdown_move!({
-        exit_work_loop.store(true, Ordering::Relaxed);
-        let thread_res = thread_h.join().unwrap();
-        println!("thread result={}", thread_res);
-    });
-    // or just:
-    // on_shutdown_move!(foobar.store(true, Ordering::Relaxed));
+    println!("Stop me with CTRL+C or kill me with another method");
+
+    // Start work loop
+    loop {
+        if !do_work.load(Ordering::Relaxed) {
+            println!("Exiting work loop");
+            break;
+        }
+    }
 }

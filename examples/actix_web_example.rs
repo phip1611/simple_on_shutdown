@@ -22,26 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use actix_web::{get, App, HttpResponse, HttpServer, Responder};
 use simple_on_shutdown::on_shutdown;
-use std::thread::sleep;
-use std::time::Duration;
 
-fn main() {
-    std::env::set_var("RUST_LOG", "debug");
-    env_logger::init();
+#[get("/")]
+async fn get_index() -> impl Responder {
+    HttpResponse::Ok().body("Hello World")
+}
 
-    println!("================ test binary ================");
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     // Important that the returned value of the macro lives through
     // the whole lifetime of main(). It gets dropped in the end.
-    on_shutdown!(println!("shut down with success"));
-    // can be used multiple times
-    on_shutdown!({
-        println!("shut");
-        println!("down");
-        println!("with");
-        println!("success");
-    });
-    println!("registered on_shutdown");
-    sleep(Duration::from_secs(1));
-    println!("waited 1 second");
+    on_shutdown!(
+        // the actual code
+        println!("This gets executed during shutdown. Better don't do expensive operations here.")
+    );
+
+    HttpServer::new(|| App::new().service(get_index))
+        .bind(format!("localhost:{}", 8080))?
+        .run()
+        .await
 }

@@ -1,106 +1,46 @@
 # simple_on_shutdown
 
 This crate consists of a convenient macro to specify on shutdown callbacks called `on_shutdown!`. It takes code that
-should be executed when your program exits (gracefully). 
+should be executed when your program exits (gracefully). See https://docs.rs/simple_on_shutdown for more info.
 
-Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
-`main()` exits. There is also `on_shutdown_move!` available in case the `FnOnce`-closure needs to capture vars, like an `Arc<>`.
-
-In theory this macro can be used everywhere where the context gets dropped. But it has a nice expressive name so that
-one exactly knows what it should achieve in code. A good example is the `main()` function in an `actix-web`-Server. For
-example you want to log to a file when the server was shut down.
-
-There is no guarantee that this gets executed during "non-regular" shutdown scenarios, like when
-receiving `CTRL+C / SIGINT / SIGTERM`. This depends on whether your application properly handles signals and if the
-operating system gives your application time before it gets totally killed/stopped.
-
-**IMPORTANT**: Use this on the top level of your main() or whatever your current runtimes main function is! The code
-gets executed when the context it lives in gets dropped. This macro can be called multiple times (at least with stable
-Rust 1.48.0) without problems.
-
-This crate uses the `log` crate on the `debug` level.
-
-*With "runtimes you do not have control over" I mean that for example actix doesn't let you specify shutdown callbacks
-by itself. In such cases my macro may be a better option.*
+Useful with *"runtimes you do not have control over"*, like for example actix-web framework doesn't let you specify 
+shutdown callbacks by yourself. In such cases my macro may be a better option.
 
 ## Usage
 
 #### Recommended
 
 ```rust
-use simple_on_shutdown::{on_shutdown, on_shutdown_move};
+use simple_on_shutdown::on_shutdown;
 
-// ...
 fn main() {
-    on_shutdown!(println!("shutted down"));
-
-    // If you need to move a variable into the `FnOnce`-closure
-    let foobar = Arc::new(AtomicBool::new(false));
-    on_shutdown_move!({
-        foobar.store(true, Ordering::Relaxed);
-        println!("foobar={}", foobar.load(Ordering::Relaxed));
-  });
+    // macro can take: direct expression
+    on_shutdown!(println!("shut down with success"));
+    // closure expression
+    on_shutdown!(|| println!("shut down with success"));
+    // move closure expression
+    on_shutdown!(move || println!("shut down with success"));
+    // block
+    on_shutdown!({ println!("shut down with success") });
+    // identifier
+    let identifier = || println!("shut down with success");
+    on_shutdown!(identifier);
 }
-```
 
-#### Not recommended, old way
-
-```rust
-// Not recommended, old way
-#[macro_use]
-extern crate simple_on_shutdown;
-
-// ...
-fn main() {
-    on_shutdown!(println!("shutted down"));
-}
 ```
 
 ## Examples
-*See also ["example/"-dir in repository!](https://github.com/phip1611/simple_on_shutdown/tree/main/example/src/bin)*
+See ["examples/"-dir in repository!](https://github.com/phip1611/simple_on_shutdown/examples).
 
-
-### Actix Web Server Example
-
-```rust
-use actix_web::{get, HttpServer, App, HttpResponse, Responder};
-use simple_on_shutdown::on_shutdown;
-
-#[get("/")]
-async fn get_index() -> impl Responder {
-    HttpResponse::Ok().body("Hello World")
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    // Important that the returned value of the macro lives through
-    // the whole lifetime of main(). It gets dropped in the end.
-    on_shutdown!({
-                // the actual code
-                println!("This gets executed during shutdown. Better don't do expensive operations here.");
-    });
-
-    HttpServer::new(|| {
-        App::new()
-            .service(get_index)
-    })
-        .bind(format!("localhost:{}", 8080))?
-        .run()
-        .await
-}
-```
-
-### More examples
-See `example/`-directory.
 
 ### ⚠ Restrictions ⚠
 
 - There is no guarantee that this gets executed in "non-regular" shutdown scenarios, like
   `CTRL+C / SIGINT / SIGTERM`
-- your application must handle `SIGINT/SIGTERM` (and other signals) in a proper way to allow a gracefully "non-regular"
+- your application must handle `SIGINT/SIGTERM` (and other signals) properly to allow a gracefully "non-regular"
   shutdown (Actix web framework does this for example)
     - i.e. if you don't handle signals `CTRL+C` will immediately shut down your app
-- but even in that case: there is no guarantee in every case that the operating system gives your application more time
+- Even in that case: there is no guarantee in every case that the operating system gives your application more time
   after it has been (forcefully) killed
-- this behaviour differs a little bit between Windows and UNIX. See `example/src/bin/simple_example_ctrl_c_signal` for
+- this behaviour differs a little between Windows and UNIX. See `example/src/bin/simple_example_ctrl_c_signal` for
   more details.

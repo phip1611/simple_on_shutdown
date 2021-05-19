@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2020 Philipp Schuster
+Copyright (c) 2021 Philipp Schuster
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,196 +21,118 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
 //! This crate consists of a convenient macro to specify on shutdown callbacks called [`on_shutdown`].
 //! It takes code that should be executed when your program exits (gracefully).
 //!
-//! Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
-//! `main()` exits. There is also [`on_shutdown_move`] available in case the `FnOnce`-closure needs to capture
-//! vars, like an `Arc<>`.
+//! Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped.
+//! This macro can be called multiple times (at least with stable Rust 1.48.0) without problems.
 //!
 //! In theory this macro can be used everywhere where the context gets dropped. But it has a nice
 //! expressive name so that one exactly knows what it should achieve in code. A good example
-//! is the `main()` function in an `actix-web`-Server. For example you want to log to a file
-//! when the server was shut down.
+//! is the `main()` function in an `actix-web`-Server or a `tokio` runtime. For example you want
+//! to log to a file when the server was shut down.
 //!
 //! There is no guarantee that this gets executed during "non-regular" shutdown scenarios,
 //! like when receiving `CTRL+C / SIGINT / SIGTERM`. This depends on whether your application
-//! properly handles signals and if the operating system gives your application time before it gets
+//! properly handles signals and if the operating system gives the application time before it gets
 //! totally killed/stopped.
-//!
-//! **IMPORTANT**: Use this on the top level of your main() or whatever your current runtimes main
-//! function is! The code gets executed when the context it lives in gets dropped.
-//! This macro can be called multiple times (at least with stable Rust 1.48.0) without problems.
-//!
-//! This crate uses the `log` crate on the `debug` level.
 
-use log::debug;
-use std::time::Instant;
+#![cfg_attr(not(test), no_std)]
 
+#[cfg(not(test))]
+extern crate alloc;
+#[cfg(not(test))]
+use alloc::boxed::Box;
+
+/// PRIVATE! Use [`on_shutdown`].
+///
 /// Simple type that holds a `FnOnce`-closure (callback). The `FnOnce`-closure gets invoked during `drop()`.
 /// This works also fine with applications that do gracefully shutdown via signals, like SIGTERM.
-///
-/// Create this type via `on_shutdown!(println!("foobar"))` or `on_shutdown!({e1; e2; e3; println!("foobar")})`.
-/// See [`on_shutdown`] and [`on_shutdown_move`] for more info.
-///
-/// This crate uses the `log` crate on the `debug` level.
-///
-/// IMPORTANT: Use this on the top level of your main() or whatever your current runtimes main
-/// function is! The code gets executed when the context it lives in gets dropped.
-/// This can be called multiple times (at least with stable Rust 1.48.0) without problem.
-///
-/// ## Example:
-/// ```
-/// use simple_on_shutdown::on_shutdown;
-///
-/// fn main() {
-///     // some code ...
-///
-///     // Important that the returned value of the macro lives through
-///     // the whole lifetime of main(). It gets dropped in the end.
-///     on_shutdown!(println!("shut down with success"));
-///
-///     // can be used multiple times
-///     on_shutdown!(println!("shut down with success"));
-///     on_shutdown!({println!("blocks also work")});
-///     // some code ...
-/// }
-/// ```
 pub struct OnShutdownCallback(Option<Box<dyn FnOnce()>>);
 
 impl OnShutdownCallback {
-    /// Constructor. Used by [`on_shutdown`] and [`on_shutdown_move`].
+    /// Constructor. Used by [`on_shutdown`].
+    ///
+    /// ## Parameters
     /// * `cb` boxed(heap) callback function
+    ///
     // THIS MUST BE PUBLIC, OTHERWISE THE MACROS DO NOT WORK!
     pub fn new(cb: Box<dyn FnOnce()>) -> Self {
         Self(Some(cb))
     }
 }
+
 impl Drop for OnShutdownCallback {
     /// Executes the specified callback.
     fn drop(&mut self) {
-        debug!("on shutdown callback:");
-        let now = Instant::now();
-        // take(): we own the value; this way
-        // we can us FnOnce (which consumes self instead of &mut self)
+        // take(): because I use a FnOnce here, I need to own the value
+        // in order for it to get executed.
         (self.0.take().unwrap())();
-        let duration_usecs = now.elapsed().as_micros();
-        let duration_secs = duration_usecs as f64 / 1_000_000_f64;
-        debug!(
-            "on shutdown callback finished: took {}s ({}µs)",
-            duration_secs, duration_usecs
-        );
     }
 }
 
 /// This crate consists of a convenient macro to specify on shutdown callbacks called [`on_shutdown`].
 /// It takes code that should be executed when your program exits (gracefully).
 ///
-/// Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped, i.e. when
-/// `main()` exits. There is also [`on_shutdown_move`] available in case the `FnOnce`-closure needs to capture
-/// vars, like an `Arc<>`.
+/// Internally it creates a `FnOnce`-closure that gets executed when the context gets dropped.
+/// This macro can be called multiple times (at least with stable Rust 1.48.0) without problems.
 ///
 /// In theory this macro can be used everywhere where the context gets dropped. But it has a nice
 /// expressive name so that one exactly knows what it should achieve in code. A good example
-/// is the `main()` function in an `actix-web`-Server. For example you want to log to a file
-/// when the server was shut down.
+/// is the `main()` function in an `actix-web`-Server or a `tokio` runtime. For example you want
+/// to log to a file when the server was shut down.
 ///
 /// There is no guarantee that this gets executed during "non-regular" shutdown scenarios,
 /// like when receiving `CTRL+C / SIGINT / SIGTERM`. This depends on whether your application
-/// properly handles signals and if the operating system gives your application time before it gets
-/// totally killed/stopped..
-///
-/// **IMPORTANT**: Use this on the top level of your main() or whatever your current runtimes main
-/// function is! The code gets executed when the context it lives in gets dropped.
-/// This macro can be called multiple times (at least with stable Rust 1.48.0) without problems.
-///
-/// This crate uses the `log` crate on the `debug` level.
-///
-/// Also see [`on_shutdown_move`].
+/// properly handles signals and if the operating system gives the application time before it gets
+/// totally killed/stopped.
 ///
 /// ## Example
 /// ```
 /// use simple_on_shutdown::on_shutdown;
 ///
 /// fn main() {
-///     // some code ...
-///
-///     // Important that the returned value of the macro lives through
-///     // the whole lifetime of main(). It gets dropped in the end.
+///     // direct expression
 ///     on_shutdown!(println!("shut down with success"));
-///
-///     // can be used multiple times
-///     on_shutdown!(println!("shut down with success"));
-///     on_shutdown!({println!("blocks also work")});
-///     // some code ...
+///     // closure expression
+///     on_shutdown!(|| println!("shut down with success"));
+///     // move closure expression
+///     on_shutdown!(move || println!("shut down with success"));
+///     // block
+///     on_shutdown!({println!("shut down with success")});
+///     // identifier
+///     let identifier = || println!("shut down with success");
+///     on_shutdown!(identifier);
 /// }
 /// ```
 #[macro_export]
 macro_rules! on_shutdown {
-    ($cb:block) => {
-        // Some unique name that the programmer will never use inside his application.
+    // a identifier that must point to a valid closure
+    ($closure:ident) => {
+        // Some unique name that a programmer will never use inside their application.
         // It's okay if this var exists multiple times if the programmer uses the macro
         // multiple times. Because two values may have the same identifier in rustlang
-        // but internally they are two different values.
-        let _on_shutdown_callback_1337deadbeeffoobaraffecoffee = $crate::OnShutdownCallback::new(
-            // put FnOnce-closure on heap
-            Box::new(
-                // closure has zero parameters
-                || {
-                    // the actual code
-                    $cb
-                },
-            ),
-        );
+        // but internally they are two different values (you can see this in debugger).
+        let _on_shutdown_callback_1337deadbeeffoobaraffecoffee =
+            $crate::OnShutdownCallback::new(Box::new($closure));
     };
-    // recursive mapping to block
+    // move closure expression
+    (move || $cb:expr) => {
+        let closure = move || $cb;
+        on_shutdown!(closure);
+    };
+    // closure expression
+    (|| $cb:expr) => {
+        let closure = || $cb;
+        on_shutdown!(closure);
+    };
     ($cb:expr) => {
-        on_shutdown!({ $cb })
+        let closure = || $cb;
+        on_shutdown!(closure);
     };
-}
-
-/// Like [`on_shutdown`] but moves all variables into the created `FnOnce`-closure.
-/// ## Example
-/// ```
-/// use std::sync::atomic::AtomicBool;
-/// use std::sync::atomic::Ordering;
-/// use std::sync::Arc;
-/// use simple_on_shutdown::on_shutdown_move;
-///
-/// fn main() {
-///     // some code ...
-///     let foobar = Arc::new(AtomicBool::new(false));
-///     // on_shutdown!() would not work here because the closure needs "foobar"
-///     on_shutdown_move!({
-///         foobar.store(true, Ordering::Relaxed);
-///         println!("foobar={}", foobar.load(Ordering::Relaxed));
-///     });
-///     // or just:
-///     // on_shutdown_move!(foobar.store(true, Ordering::Relaxed));
-/// }
-/// ```
-#[macro_export]
-macro_rules! on_shutdown_move {
     ($cb:block) => {
-        // Some unique name that the programmer will never use inside his application.
-        // It's okay if this var exists multiple times if the programmer uses the macro
-        // multiple times. Because two values may have the same identifier in rustlang
-        // but internally they are two different values.
-        let _on_shutdown_callback_1337deadbeeffoobaraffecoffee = $crate::OnShutdownCallback::new(
-            // put closure on heap
-            Box::new(
-                // closure has zero parameters; moves variables into closure
-                move || {
-                    // the actual code
-                    $cb
-                },
-            ),
-        );
-    };
-    // recursive mapping to block
-    ($cb:expr) => {
-        on_shutdown_move!({ $cb })
+        let closure = || $cb;
+        on_shutdown!(closure);
     };
 }
 
@@ -222,6 +144,21 @@ mod tests {
     use std::sync::Arc;
     use std::thread::sleep;
     use std::time::Duration;
+
+    #[test]
+    fn test_macro_compilation() {
+        // direct expression
+        on_shutdown!(println!("shut down with success"));
+        // closure expression
+        on_shutdown!(|| println!("shut down with success"));
+        // move closure expression
+        on_shutdown!(move || println!("shut down with success"));
+        // block
+        on_shutdown!({ println!("shut down with success") });
+        // identifier
+        let identifier = || println!("shut down with success");
+        on_shutdown!(identifier);
+    }
 
     #[test]
     fn test_simple() {
@@ -249,11 +186,9 @@ mod tests {
         let foobar = Arc::new(AtomicBool::new(false));
         let foobar_c = foobar.clone();
         //on_shutdown!() would not work here because the closure needs "foobar"
-        on_shutdown_move!({
+        on_shutdown!(move || {
             foobar_c.store(true, Ordering::Relaxed);
             println!("foobar={}", foobar_c.load(Ordering::Relaxed));
         });
-        // or just:
-        on_shutdown_move!(foobar.store(true, Ordering::Relaxed));
     }
 }
