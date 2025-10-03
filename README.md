@@ -1,10 +1,8 @@
 # simple_on_shutdown
 
-This crate consists of a convenient macro to specify on shutdown callbacks called `on_shutdown!`. It takes code that
-should be executed when your program exits (gracefully). See https://docs.rs/simple_on_shutdown for more info.
-
-Useful with *"runtimes you do not have control over"*, like for example actix-web framework doesn't let you specify 
-shutdown callbacks by yourself. In such cases my macro may be a better option.
+Convenient macro to specify on shutdown callbacks (e.g., for web server
+runtimes) in a simple way. For example, this is useful in a tokio runtime to
+execute things when the runtime is about to exit.
 
 ## Usage
 
@@ -30,7 +28,7 @@ fn main() {
 ```
 
 ## Examples
-See ["examples/"-dir in repository!](https://github.com/phip1611/simple_on_shutdown/examples).
+See [`examples/`-dir in repository!](https://github.com/phip1611/simple_on_shutdown/examples).
 
 
 ### ⚠ Restrictions ⚠
