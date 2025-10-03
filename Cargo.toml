@@ -1,25 +1,25 @@
 [package]
 name = "simple_on_shutdown"
 description = """
-This crate consists of a convenient macro to specify on shutdown callbacks (=code that should run when your program
-exits (grafecully)). It's super simple and stripped-down.
+Convenient macro to specify on shutdown callbacks (e.g., for web server runtimes) in a simple way.
 """
 version = "1.0.0"
 authors = ["Philipp Schuster <phip1611@gmail.com>"]
-edition = "2018"
+edition = "2024"
 exclude = [
-    ".travis.yml"
+    ".github"
 ]
-categories = ["no-std"]
+categories = ["no-std", "hardware-support"]
 keywords = ["shutdown", "callback", "termination"]
 readme = "README.md"
 license = "MIT"
 homepage = "https://github.com/phip1611/simple_on_shutdown"
 repository = "https://github.com/phip1611/simple_on_shutdown"
 documentation = "https://docs.rs/simple_on_shutdown"
+rust-version = "1.85"
 
 # for examples
 [dev-dependencies]
-env_logger = "0.8.3"
-actix-web = "3.3.2"
-ctrlc = { version = "3.1.9", features = ["termination"] }
+env_logger = "0.11"
+actix-web = "4.11"
+ctrlc = { version = "3.5", features = ["termination"] }

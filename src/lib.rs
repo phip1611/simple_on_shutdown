@@ -139,9 +139,9 @@ macro_rules! on_shutdown {
 /// A test works if after executing it you can see the shutdown action in the output.
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use std::sync::atomic::AtomicBool;
     use std::sync::atomic::Ordering;
-    use std::sync::Arc;
     use std::thread::sleep;
     use std::time::Duration;
 

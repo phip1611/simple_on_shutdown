@@ -25,13 +25,15 @@ SOFTWARE.
 //! with SIGNALS, like when pressing CTRL+C.
 
 use simple_on_shutdown::on_shutdown;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// This example shows you how you can use [`simple_on_shutdown::on_shutdown`] to work
 /// with SIGNALS, like when pressing CTRL+C.
 fn main() {
-    std::env::set_var("RUST_LOG", "debug");
+    unsafe {
+        std::env::set_var("RUST_LOG", "debug");
+    }
     env_logger::init();
 
     let do_work = Arc::new(AtomicBool::new(true));
